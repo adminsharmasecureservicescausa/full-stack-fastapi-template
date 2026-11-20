@@ -2,7 +2,7 @@
 
 import { type Client, type Options as Options2, type TDataShape, urlSearchParamsBodySerializer } from './client';
 import { client } from './client.gen';
-import type { itemsCreateItemData, itemsCreateItemErrors, itemsCreateItemResponses, itemsDeleteItemData, itemsDeleteItemErrors, itemsDeleteItemResponses, itemsReadItemData, itemsReadItemErrors, itemsReadItemResponses, itemsReadItemsData, itemsReadItemsErrors, itemsReadItemsResponses, itemsUpdateItemData, itemsUpdateItemErrors, itemsUpdateItemResponses, loginLoginAccessTokenData, loginLoginAccessTokenErrors, loginLoginAccessTokenResponses, loginOauthAuthorizeData, loginOauthAuthorizeErrors, loginOauthAuthorizeResponses, loginOauthCallbackData, loginOauthCallbackErrors, loginOauthCallbackResponses, loginReadOauthProvidersData, loginReadOauthProvidersResponses, loginRecoverPasswordData, loginRecoverPasswordErrors, loginRecoverPasswordHtmlContentData, loginRecoverPasswordHtmlContentErrors, loginRecoverPasswordHtmlContentResponses, loginRecoverPasswordResponses, loginResetPasswordData, loginResetPasswordErrors, loginResetPasswordResponses, loginTestTokenData, loginTestTokenResponses, privateCreateUserData, privateCreateUserErrors, privateCreateUserResponses, usersCreateUserData, usersCreateUserErrors, usersCreateUserResponses, usersDeleteUserData, usersDeleteUserErrors, usersDeleteUserMeData, usersDeleteUserMeResponses, usersDeleteUserResponses, usersReadUserByIdData, usersReadUserByIdErrors, usersReadUserByIdResponses, usersReadUserMeData, usersReadUserMeResponses, usersReadUsersData, usersReadUsersErrors, usersReadUsersResponses, usersRegisterUserData, usersRegisterUserErrors, usersRegisterUserResponses, usersUpdatePasswordMeData, usersUpdatePasswordMeErrors, usersUpdatePasswordMeResponses, usersUpdateUserData, usersUpdateUserErrors, usersUpdateUserMeData, usersUpdateUserMeErrors, usersUpdateUserMeResponses, usersUpdateUserResponses, utilsHealthCheckData, utilsHealthCheckResponses, utilsTestEmailData, utilsTestEmailErrors, utilsTestEmailResponses } from './types.gen';
+import type { itemsCreateItemData, itemsCreateItemErrors, itemsCreateItemResponses, itemsDeleteItemData, itemsDeleteItemErrors, itemsDeleteItemResponses, itemsReadItemData, itemsReadItemErrors, itemsReadItemResponses, itemsReadItemsData, itemsReadItemsErrors, itemsReadItemsResponses, itemsUpdateItemData, itemsUpdateItemErrors, itemsUpdateItemResponses, loginLoginAccessTokenData, loginLoginAccessTokenErrors, loginLoginAccessTokenResponses, loginLoginWithCertificateData, loginLoginWithCertificateResponses, loginOauthAuthorizeData, loginOauthAuthorizeErrors, loginOauthAuthorizeResponses, loginOauthCallbackData, loginOauthCallbackErrors, loginOauthCallbackResponses, loginReadCertificateLoginData, loginReadCertificateLoginResponses, loginReadOauthProvidersData, loginReadOauthProvidersResponses, loginRecoverPasswordData, loginRecoverPasswordErrors, loginRecoverPasswordHtmlContentData, loginRecoverPasswordHtmlContentErrors, loginRecoverPasswordHtmlContentResponses, loginRecoverPasswordResponses, loginResetPasswordData, loginResetPasswordErrors, loginResetPasswordResponses, loginTestTokenData, loginTestTokenResponses, privateCreateUserData, privateCreateUserErrors, privateCreateUserResponses, usersCreateUserData, usersCreateUserErrors, usersCreateUserResponses, usersDeleteUserData, usersDeleteUserErrors, usersDeleteUserMeData, usersDeleteUserMeResponses, usersDeleteUserResponses, usersLinkCertificatePemData, usersLinkCertificatePemErrors, usersLinkCertificatePemResponses, usersLinkPresentedCertificateData, usersLinkPresentedCertificateResponses, usersReadMyCertificatesData, usersReadMyCertificatesResponses, usersReadUserByIdData, usersReadUserByIdErrors, usersReadUserByIdResponses, usersReadUserCertificatesData, usersReadUserCertificatesErrors, usersReadUserCertificatesResponses, usersReadUserMeData, usersReadUserMeResponses, usersReadUsersData, usersReadUsersErrors, usersReadUsersResponses, usersRegisterUserData, usersRegisterUserErrors, usersRegisterUserResponses, usersRevokeUserCertificateData, usersRevokeUserCertificateErrors, usersRevokeUserCertificateResponses, usersUnlinkMyCertificateData, usersUnlinkMyCertificateErrors, usersUnlinkMyCertificateResponses, usersUpdatePasswordMeData, usersUpdatePasswordMeErrors, usersUpdatePasswordMeResponses, usersUpdateUserData, usersUpdateUserErrors, usersUpdateUserMeData, usersUpdateUserMeErrors, usersUpdateUserMeResponses, usersUpdateUserResponses, utilsHealthCheckData, utilsHealthCheckResponses, utilsTestEmailData, utilsTestEmailErrors, utilsTestEmailResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -135,6 +135,32 @@ export class LoginService {
                 'Content-Type': 'application/json',
                 ...options.headers
             }
+        });
+    }
+    
+    /**
+     * Read Certificate Login
+     *
+     * Whether client-certificate sign-in is enabled and fully configured.
+     */
+    public static readCertificateLogin<ThrowOnError extends boolean = true>(options?: Options<loginReadCertificateLoginData, ThrowOnError>) {
+        return (options?.client ?? client).get<loginReadCertificateLoginResponses, unknown, ThrowOnError>({
+            responseType: 'json',
+            url: '/api/v1/login/certificate',
+            ...options
+        });
+    }
+    
+    /**
+     * Login With Certificate
+     *
+     * Issue an access token for the user linked to the presented client certificate.
+     */
+    public static loginWithCertificate<ThrowOnError extends boolean = true>(options?: Options<loginLoginWithCertificateData, ThrowOnError>) {
+        return (options?.client ?? client).post<loginLoginWithCertificateResponses, unknown, ThrowOnError>({
+            responseType: 'json',
+            url: '/api/v1/login/certificate',
+            ...options
         });
     }
 }
@@ -296,6 +322,94 @@ export class UsersService {
                 'Content-Type': 'application/json',
                 ...options.headers
             }
+        });
+    }
+    
+    /**
+     * Read My Certificates
+     *
+     * List client certificates linked to the current user.
+     */
+    public static readMyCertificates<ThrowOnError extends boolean = true>(options?: Options<usersReadMyCertificatesData, ThrowOnError>) {
+        return (options?.client ?? client).get<usersReadMyCertificatesResponses, unknown, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/users/me/certificates',
+            ...options
+        });
+    }
+    
+    /**
+     * Link Certificate Pem
+     *
+     * Link an uploaded public certificate whose email matches this account.
+     */
+    public static linkCertificatePem<ThrowOnError extends boolean = true>(options: Options<usersLinkCertificatePemData, ThrowOnError>) {
+        return (options.client ?? client).post<usersLinkCertificatePemResponses, usersLinkCertificatePemErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/users/me/certificates',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+    
+    /**
+     * Link Presented Certificate
+     *
+     * Link the client certificate the trusted proxy presented on this request.
+     */
+    public static linkPresentedCertificate<ThrowOnError extends boolean = true>(options?: Options<usersLinkPresentedCertificateData, ThrowOnError>) {
+        return (options?.client ?? client).post<usersLinkPresentedCertificateResponses, unknown, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/users/me/certificates/current',
+            ...options
+        });
+    }
+    
+    /**
+     * Unlink My Certificate
+     *
+     * Unlink one of the current user's client certificates.
+     */
+    public static unlinkMyCertificate<ThrowOnError extends boolean = true>(options: Options<usersUnlinkMyCertificateData, ThrowOnError>) {
+        return (options.client ?? client).delete<usersUnlinkMyCertificateResponses, usersUnlinkMyCertificateErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/users/me/certificates/{certificate_id}',
+            ...options
+        });
+    }
+    
+    /**
+     * Read User Certificates
+     *
+     * List a user's client certificates.
+     */
+    public static readUserCertificates<ThrowOnError extends boolean = true>(options: Options<usersReadUserCertificatesData, ThrowOnError>) {
+        return (options.client ?? client).get<usersReadUserCertificatesResponses, usersReadUserCertificatesErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/users/{user_id}/certificates',
+            ...options
+        });
+    }
+    
+    /**
+     * Revoke User Certificate
+     *
+     * Revoke a user's client certificate.
+     */
+    public static revokeUserCertificate<ThrowOnError extends boolean = true>(options: Options<usersRevokeUserCertificateData, ThrowOnError>) {
+        return (options.client ?? client).delete<usersRevokeUserCertificateResponses, usersRevokeUserCertificateErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/users/{user_id}/certificates/{certificate_id}',
+            ...options
         });
     }
 }

@@ -35,6 +35,66 @@ export type Body_login_login_access_token = {
 };
 
 /**
+ * CertificateLoginPublic
+ */
+export type CertificateLoginPublic = {
+    /**
+     * Enabled
+     */
+    enabled: boolean;
+};
+
+/**
+ * ClientCertificateCreate
+ */
+export type ClientCertificateCreate = {
+    /**
+     * Pem
+     */
+    pem: string;
+};
+
+/**
+ * ClientCertificatePublic
+ */
+export type ClientCertificatePublic = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Fingerprint
+     */
+    fingerprint: string;
+    /**
+     * Email
+     */
+    email?: string | null;
+    /**
+     * Provider
+     */
+    provider: string;
+    /**
+     * Created At
+     */
+    created_at?: string | null;
+};
+
+/**
+ * ClientCertificatesPublic
+ */
+export type ClientCertificatesPublic = {
+    /**
+     * Data
+     */
+    data: Array<ClientCertificatePublic>;
+    /**
+     * Count
+     */
+    count: number;
+};
+
+/**
  * HTTPValidationError
  */
 export type HTTPValidationError = {
@@ -579,6 +639,38 @@ export type loginOauthCallbackResponses = {
 
 export type loginOauthCallbackResponse = loginOauthCallbackResponses[keyof loginOauthCallbackResponses];
 
+export type loginReadCertificateLoginData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/login/certificate';
+};
+
+export type loginReadCertificateLoginResponses = {
+    /**
+     * Successful Response
+     */
+    200: CertificateLoginPublic;
+};
+
+export type loginReadCertificateLoginResponse = loginReadCertificateLoginResponses[keyof loginReadCertificateLoginResponses];
+
+export type loginLoginWithCertificateData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/login/certificate';
+};
+
+export type loginLoginWithCertificateResponses = {
+    /**
+     * Successful Response
+     */
+    200: Token;
+};
+
+export type loginLoginWithCertificateResponse = loginLoginWithCertificateResponses[keyof loginLoginWithCertificateResponses];
+
 export type usersReadUsersData = {
     body?: never;
     path?: never;
@@ -834,6 +926,157 @@ export type usersUpdateUserResponses = {
 };
 
 export type usersUpdateUserResponse = usersUpdateUserResponses[keyof usersUpdateUserResponses];
+
+export type usersReadMyCertificatesData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/users/me/certificates';
+};
+
+export type usersReadMyCertificatesResponses = {
+    /**
+     * Successful Response
+     */
+    200: ClientCertificatesPublic;
+};
+
+export type usersReadMyCertificatesResponse = usersReadMyCertificatesResponses[keyof usersReadMyCertificatesResponses];
+
+export type usersLinkCertificatePemData = {
+    body: ClientCertificateCreate;
+    path?: never;
+    query?: never;
+    url: '/api/v1/users/me/certificates';
+};
+
+export type usersLinkCertificatePemErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type usersLinkCertificatePemError = usersLinkCertificatePemErrors[keyof usersLinkCertificatePemErrors];
+
+export type usersLinkCertificatePemResponses = {
+    /**
+     * Successful Response
+     */
+    200: ClientCertificatePublic;
+};
+
+export type usersLinkCertificatePemResponse = usersLinkCertificatePemResponses[keyof usersLinkCertificatePemResponses];
+
+export type usersLinkPresentedCertificateData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/users/me/certificates/current';
+};
+
+export type usersLinkPresentedCertificateResponses = {
+    /**
+     * Successful Response
+     */
+    200: ClientCertificatePublic;
+};
+
+export type usersLinkPresentedCertificateResponse = usersLinkPresentedCertificateResponses[keyof usersLinkPresentedCertificateResponses];
+
+export type usersUnlinkMyCertificateData = {
+    body?: never;
+    path: {
+        /**
+         * Certificate Id
+         */
+        certificate_id: string;
+    };
+    query?: never;
+    url: '/api/v1/users/me/certificates/{certificate_id}';
+};
+
+export type usersUnlinkMyCertificateErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type usersUnlinkMyCertificateError = usersUnlinkMyCertificateErrors[keyof usersUnlinkMyCertificateErrors];
+
+export type usersUnlinkMyCertificateResponses = {
+    /**
+     * Successful Response
+     */
+    200: Message;
+};
+
+export type usersUnlinkMyCertificateResponse = usersUnlinkMyCertificateResponses[keyof usersUnlinkMyCertificateResponses];
+
+export type usersReadUserCertificatesData = {
+    body?: never;
+    path: {
+        /**
+         * User Id
+         */
+        user_id: string;
+    };
+    query?: never;
+    url: '/api/v1/users/{user_id}/certificates';
+};
+
+export type usersReadUserCertificatesErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type usersReadUserCertificatesError = usersReadUserCertificatesErrors[keyof usersReadUserCertificatesErrors];
+
+export type usersReadUserCertificatesResponses = {
+    /**
+     * Successful Response
+     */
+    200: ClientCertificatesPublic;
+};
+
+export type usersReadUserCertificatesResponse = usersReadUserCertificatesResponses[keyof usersReadUserCertificatesResponses];
+
+export type usersRevokeUserCertificateData = {
+    body?: never;
+    path: {
+        /**
+         * User Id
+         */
+        user_id: string;
+        /**
+         * Certificate Id
+         */
+        certificate_id: string;
+    };
+    query?: never;
+    url: '/api/v1/users/{user_id}/certificates/{certificate_id}';
+};
+
+export type usersRevokeUserCertificateErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type usersRevokeUserCertificateError = usersRevokeUserCertificateErrors[keyof usersRevokeUserCertificateErrors];
+
+export type usersRevokeUserCertificateResponses = {
+    /**
+     * Successful Response
+     */
+    200: Message;
+};
+
+export type usersRevokeUserCertificateResponse = usersRevokeUserCertificateResponses[keyof usersRevokeUserCertificateResponses];
 
 export type utilsTestEmailData = {
     body?: never;

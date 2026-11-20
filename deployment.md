@@ -42,6 +42,8 @@ To enable social sign-in, add these optional secrets. A provider stays disabled 
 
 To enable emails with an authenticated provider, add `SMTP_PASSWORD` as a secret.
 
+Client-certificate sign-in needs a TLS proxy that verifies the client certificate and forwards it. The Docker Compose deployment configures Traefik for that. FastAPI Cloud does not forward a verified client certificate to the app, so use the [Docker Compose guide](./deployment-docker-compose.md) when you want mutual TLS. The API variables, if you terminate TLS yourself, are `MTLS_ENABLED`, `MTLS_CA_FILE` or `MTLS_CA_CERT`, `MTLS_TRUSTED_PROXIES`, and optionally `MTLS_CLIENT_CERT_HEADER`, `MTLS_PROVIDER`, and `MTLS_MATCH_EMAIL`. Leave `MTLS_ENABLED` unset or `false` until the proxy is configured. The certificate header is ignored unless the TCP connection comes from `MTLS_TRUSTED_PROXIES`.
+
 You can generate secure values for `SECRET_KEY` and `FIRST_SUPERUSER_PASSWORD` with:
 
 ```bash

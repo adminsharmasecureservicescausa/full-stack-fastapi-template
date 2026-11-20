@@ -1,0 +1,27 @@
+# Client-certificate checking for the HTTPS entrypoint.
+# compose.mtls.yml is what mounts this file. Leave it out to keep certificate
+# sign-in disabled.
+
+tls:
+  options:
+    default:
+      clientAuth:
+        caFiles:
+          - /certs/client-ca.pem
+        # Ask for a certificate, but still allow password and OAuth sign-in
+        # when the browser does not present one. A presented certificate must
+        # chain to the CA above.
+        clientAuthType: VerifyClientCertIfGiven
+
+http:
+  middlewares:
+    # An empty value deletes the header. This runs before pass-client-cert so
+    # a caller cannot supply their own certificate header through the proxy.
+    strip-client-cert:
+      headers:
+        customRequestHeaders:
+          X-Forwarded-Tls-Client-Cert: ""
+          X-Forwarded-Tls-Client-Cert-Info: ""
+    pass-client-cert:
+      passTLSClientCert:
+        pem: true

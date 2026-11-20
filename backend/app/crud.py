@@ -2,17 +2,25 @@ import uuid
 from typing import Any
 
 from sqlalchemy.exc import IntegrityError
-from sqlmodel import Session, func, select
+from sqlmodel import Session, col, func, select
 
 from app.core.security import get_password_hash, verify_password
 from app.models import (
     ExternalIdentity,
+    IdentityType,
     Item,
     ItemCreate,
     User,
     UserCreate,
     UserUpdate,
 )
+
+
+class IdentityLinkError(Exception):
+    def __init__(self, detail: str, status_code: int = 400) -> None:
+        self.detail = detail
+        self.status_code = status_code
+        super().__init__(detail)
 
 
 def create_user(*, session: Session, user_create: UserCreate) -> User:
@@ -146,6 +154,95 @@ def link_external_identity(
             user = linked
     session.refresh(user)
     return user
+
+
+def list_certificate_identities(
+    *, session: Session, user_id: uuid.UUID
+) -> list[ExternalIdentity]:
+    statement = (
+        select(ExternalIdentity)
+        .where(
+            ExternalIdentity.user_id == user_id,
+            ExternalIdentity.identity_type == IdentityType.MTLS,
+        )
+        .order_by(col(ExternalIdentity.created_at).desc())
+    )
+    return list(session.exec(statement).all())
+
+
+def link_certificate_identity(
+    *,
+    session: Session,
+    user_id: uuid.UUID,
+    provider: str,
+    fingerprint: str,
+    email: str | None,
+) -> ExternalIdentity:
+    """Link a verified certificate fingerprint to an existing user.
+
+    The same fingerprint linked again by that user is returned unchanged.
+    A fingerprint already linked to someone else is rejected.
+    """
+    existing = get_external_identity(
+        session=session,
+        identity_type=IdentityType.MTLS,
+        provider=provider,
+        subject=fingerprint,
+    )
+    if existing is not None:
+        if existing.user_id != user_id:
+            raise IdentityLinkError(
+                "Certificate is already linked to another account", status_code=409
+            )
+        if email and existing.email != email:
+            existing.email = email
+            session.add(existing)
+            session.commit()
+            session.refresh(existing)
+        return existing
+
+    identity = ExternalIdentity(
+        user_id=user_id,
+        identity_type=IdentityType.MTLS,
+        provider=provider,
+        subject=fingerprint,
+        email=email,
+    )
+    session.add(identity)
+    try:
+        session.commit()
+    except IntegrityError:
+        session.rollback()
+        raced = get_external_identity(
+            session=session,
+            identity_type=IdentityType.MTLS,
+            provider=provider,
+            subject=fingerprint,
+        )
+        if raced is None:
+            raise
+        if raced.user_id != user_id:
+            raise IdentityLinkError(
+                "Certificate is already linked to another account", status_code=409
+            ) from None
+        return raced
+    session.refresh(identity)
+    return identity
+
+
+def delete_certificate_identity(
+    *, session: Session, user_id: uuid.UUID, identity_id: uuid.UUID
+) -> bool:
+    identity = session.get(ExternalIdentity, identity_id)
+    if (
+        identity is None
+        or identity.user_id != user_id
+        or identity.identity_type != IdentityType.MTLS
+    ):
+        return False
+    session.delete(identity)
+    session.commit()
+    return True
 
 
 # Dummy hash to use for timing attack prevention when user is not found

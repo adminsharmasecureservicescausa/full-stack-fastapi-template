@@ -1,0 +1,50 @@
+# Optional mutual-TLS overlay. Include it after the deploy file:
+#
+#   docker compose -f compose.yml -f compose.deploy.yml -f compose.mtls.yml up -d
+#
+# Required in the environment:
+#   MTLS_CA_FILE_HOST  absolute or relative path of the client CA PEM on the host
+#
+# The proxy gets a fixed address so the API can trust only that peer.
+# MTLS_PROXY_IP must be inside MTLS_DOCKER_SUBNET, and MTLS_TRUSTED_PROXIES
+# must be that same address.
+
+services:
+  proxy:
+    networks:
+      default:
+        ipv4_address: ${MTLS_PROXY_IP:-172.28.10.10}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - traefik-certificates:/certificates
+      - ./deployment/traefik/mtls.yml:/etc/traefik/dynamic/mtls.yml:ro
+      - ${MTLS_CA_FILE_HOST:?Set MTLS_CA_FILE_HOST to the client CA PEM}:/certs/client-ca.pem:ro
+    command:
+      - --providers.docker
+      - --providers.docker.exposedbydefault=false
+      - --entrypoints.http.address=:80
+      - --entrypoints.http.http.redirections.entrypoint.to=https
+      - --entrypoints.http.http.redirections.entrypoint.scheme=https
+      - --entrypoints.https.address=:443
+      - --entrypoints.https.http.aliasHeadersStrategy=delete
+      - --entrypoints.https.http.middlewares=strip-client-cert@file,pass-client-cert@file
+      - --certificatesresolvers.le.acme.storage=/certificates/acme.json
+      - --certificatesresolvers.le.acme.tlschallenge=true
+      - --providers.file.directory=/etc/traefik/dynamic
+      - --providers.file.watch=true
+      - --accesslog
+      - --log
+
+  backend:
+    volumes:
+      - ${MTLS_CA_FILE_HOST:?Set MTLS_CA_FILE_HOST to the client CA PEM}:/certs/client-ca.pem:ro
+    environment:
+      MTLS_ENABLED: "true"
+      MTLS_CA_FILE: /certs/client-ca.pem
+      MTLS_TRUSTED_PROXIES: ${MTLS_TRUSTED_PROXIES:-172.28.10.10}
+
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: ${MTLS_DOCKER_SUBNET:-172.28.10.0/24}

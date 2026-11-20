@@ -56,10 +56,14 @@ export const Route = createFileRoute("/login")({
 })
 
 function Login() {
-  const { loginMutation } = useAuth()
+  const { loginMutation, certificateLoginMutation } = useAuth()
   const providers = useQuery({
     queryKey: ["oauthProviders"],
     queryFn: async () => (await LoginService.readOauthProviders()).data.data,
+  })
+  const certificateLogin = useQuery({
+    queryKey: ["certificateLogin"],
+    queryFn: async () => (await LoginService.readCertificateLogin()).data,
   })
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -136,18 +140,20 @@ function Login() {
             <LoadingButton type="submit" loading={loginMutation.isPending}>
               Log In
             </LoadingButton>
-            {providers.data && providers.data.length > 0 && (
+            {((providers.data && providers.data.length > 0) ||
+              certificateLogin.data?.enabled) && (
               <div className="grid gap-3">
                 <div className="relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t after:border-border">
                   <span className="bg-background text-muted-foreground relative z-10 px-2">
                     or
                   </span>
                 </div>
-                {providers.data.map((provider) => (
+                {providers.data?.map((provider) => (
                   <Button
                     key={provider.id}
                     type="button"
                     variant="outline"
+                    className="w-full whitespace-normal"
                     data-testid={`oauth-${provider.id}`}
                     onClick={() => {
                       const base = import.meta.env.VITE_API_URL ?? ""
@@ -159,6 +165,21 @@ function Login() {
                     Continue with {provider.name}
                   </Button>
                 ))}
+                {certificateLogin.data?.enabled && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full whitespace-normal"
+                    data-testid="certificate-login"
+                    disabled={certificateLoginMutation.isPending}
+                    onClick={() => {
+                      if (certificateLoginMutation.isPending) return
+                      certificateLoginMutation.mutate()
+                    }}
+                  >
+                    Sign in with certificate
+                  </Button>
+                )}
               </div>
             )}
           </div>

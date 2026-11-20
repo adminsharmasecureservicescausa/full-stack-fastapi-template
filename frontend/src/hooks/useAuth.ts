@@ -53,6 +53,19 @@ const useAuth = () => {
     onError: handleError.bind(showErrorToast),
   })
 
+  const loginWithCertificate = async () => {
+    const response = await LoginService.loginWithCertificate()
+    localStorage.setItem("access_token", response.data.access_token)
+  }
+
+  const certificateLoginMutation = useMutation({
+    mutationFn: loginWithCertificate,
+    onSuccess: () => {
+      navigate({ to: "/" })
+    },
+    onError: handleError.bind(showErrorToast),
+  })
+
   const logout = () => {
     localStorage.removeItem("access_token")
     navigate({ to: "/login" })
@@ -61,6 +74,7 @@ const useAuth = () => {
   return {
     signUpMutation,
     loginMutation,
+    certificateLoginMutation,
     logout,
     user,
   }

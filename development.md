@@ -58,7 +58,50 @@ http://localhost:5173/oauth/callback
 
 Restart the backend after changing these values. Accounts created this way have no password until the user sets one with Forgot your password. Signing in with a verified email that already belongs to a user links the provider to that existing account.
 
-External identities are stored in `external_identity` as `(identity_type, provider, subject)`. `identity_type` is `oidc` for these providers. A later client-certificate login can add rows with `identity_type` `mtls` without a new table.
+External identities are stored in `external_identity` as `(identity_type, provider, subject)`. `identity_type` is `oidc` for these providers. Client certificates use the same table with `identity_type` `mtls`: `provider` is `MTLS_PROVIDER` and `subject` is the lowercase SHA-256 fingerprint of the certificate.
+
+### Sign in with a client certificate
+
+Certificate sign-in is off until `MTLS_ENABLED=true`, a CA is set in `MTLS_CA_FILE` or `MTLS_CA_CERT`, and `MTLS_TRUSTED_PROXIES` lists the reverse proxy that terminates TLS. The login page shows **Sign in with certificate** only when all three are in place. Email and password, and any enabled OAuth providers, stay available.
+
+The browser proves it has the private key during the TLS handshake. Traefik checks the certificate against the CA and forwards the public certificate in `X-Forwarded-Tls-Client-Cert`. The API trusts that header only from `MTLS_TRUSTED_PROXIES`, then checks the dates, the client-auth extended key usage, and the CA again. A header sent by anyone else is ignored.
+
+For a browser, use the Docker Compose deployment with `compose.mtls.yml` (see the [Docker Compose deployment guide](./deployment-docker-compose.md)). Let's Encrypt and client certificates both need a real TLS listener, so the Vite dev server on port 5173 does not ask the browser for a certificate.
+
+To exercise the API on your machine without Traefik, point `MTLS_CA_FILE` at a CA, set `MTLS_TRUSTED_PROXIES=127.0.0.1`, and restart the backend. That trusts the header from localhost only. Do not use that setting when port 8000 is reachable by other machines.
+
+Create a CA and a client certificate (the private key stays on the machine that will sign in; do not commit either key):
+
+```bash
+openssl req -x509 -newkey rsa:4096 -sha256 -days 3650 -nodes \
+  -keyout client-ca.key -out client-ca.pem \
+  -subj "/CN=App Client CA" \
+  -addext basicConstraints=critical,CA:true \
+  -addext keyUsage=critical,keyCertSign,cRLSign
+
+openssl req -newkey rsa:2048 -nodes \
+  -keyout client.key -out client.csr \
+  -subj "/CN=Ada Lovelace"
+
+cat > client.ext <<'EOF'
+basicConstraints=critical,CA:FALSE
+keyUsage=critical,digitalSignature
+extendedKeyUsage=clientAuth
+subjectAltName=email:ada@example.com
+EOF
+
+openssl x509 -req -in client.csr -CA client-ca.pem -CAkey client-ca.key \
+  -CAcreateserial -out client.pem -days 365 -sha256 -extfile client.ext
+
+openssl x509 -in client.pem -noout -fingerprint -sha256
+
+openssl pkcs12 -export -inkey client.key -in client.pem -certfile client-ca.pem \
+  -out client.p12
+```
+
+`client.pem` is the public certificate. Import `client.p12` into the browser or OS certificate store. In the app, open Settings → Certificates and either upload `client.pem` (its email must match the account) or choose **Link the certificate presented to this site** while the browser is presenting it. An admin can review and revoke linked certificates from the user actions menu.
+
+Set `MTLS_CA_FILE` to the path of `client-ca.pem`. `MTLS_PROVIDER` is the label stored with the link (default `client-ca`). `MTLS_MATCH_EMAIL=true` links a certificate on first sign-in when its subject or SAN email matches exactly one existing user. Leave it false so a certificate works only after someone links it, and so unlinking it stays unlinked. The fingerprint recorded for the account is the SHA-256 printed by the `openssl x509 -fingerprint` command, without colons, in lowercase.
 
 ### Frontend Served by FastAPI
 

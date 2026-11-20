@@ -69,9 +69,10 @@ class IdentityType:
     """Authenticator families stored on ``ExternalIdentity``.
 
     ``oidc`` covers OpenID Connect and OAuth 2.0 providers. ``mtls`` is
-    reserved for client-certificate login: ``provider`` will name the trust
-    domain and ``subject`` the certificate fingerprint. New families reuse
-    this table, so they do not need a migration.
+    client-certificate login: ``provider`` is the trust-domain slug
+    (``MTLS_PROVIDER``) and ``subject`` is the SHA-256 fingerprint of the
+    certificate. New families reuse this table, so they do not need a
+    migration.
     """
 
     OIDC = "oidc"
@@ -83,8 +84,8 @@ class ExternalIdentity(SQLModel, table=True):
 
     The unique key is ``(identity_type, provider, subject)``. For OIDC,
     ``provider`` is the IdP slug and ``subject`` is the provider's stable
-    subject. A later mTLS login can insert rows with ``identity_type``
-    ``mtls`` without changing this schema.
+    subject. For mutual TLS, ``provider`` is the configured trust domain and
+    ``subject`` is the lowercase hex SHA-256 fingerprint.
     """
 
     __tablename__ = "external_identity"
@@ -193,3 +194,24 @@ class OAuthProvidersPublic(SQLModel):
 class OAuthCallback(SQLModel):
     code: str = Field(min_length=1, max_length=2048)
     state: str = Field(min_length=1, max_length=512)
+
+
+class CertificateLoginPublic(SQLModel):
+    enabled: bool
+
+
+class ClientCertificatePublic(SQLModel):
+    id: uuid.UUID
+    fingerprint: str
+    email: str | None = None
+    provider: str
+    created_at: datetime | None = None
+
+
+class ClientCertificatesPublic(SQLModel):
+    data: list[ClientCertificatePublic]
+    count: int
+
+
+class ClientCertificateCreate(SQLModel):
+    pem: str = Field(min_length=1, max_length=20000)

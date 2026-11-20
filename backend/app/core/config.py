@@ -73,6 +73,17 @@ class Settings(BaseSettings):
     # JSON array of additional OIDC providers. Empty disables the list.
     OIDC_PROVIDERS: str = ""
 
+    # Client-certificate (mutual TLS) sign-in. Inactive unless enabled, a CA
+    # is configured, and at least one trusted proxy is set. The certificate
+    # header is ignored unless the direct TCP peer is one of those proxies.
+    MTLS_ENABLED: bool = False
+    MTLS_CA_FILE: str = ""
+    MTLS_CA_CERT: str = ""
+    MTLS_TRUSTED_PROXIES: str = ""
+    MTLS_CLIENT_CERT_HEADER: str = "X-Forwarded-Tls-Client-Cert"
+    MTLS_PROVIDER: str = "client-ca"
+    MTLS_MATCH_EMAIL: bool = False
+
     def _check_default_secret(self, var_name: str, value: str | None) -> None:
         if value == "changethis":
             message = (
@@ -92,6 +103,19 @@ class Settings(BaseSettings):
         self._check_default_secret(
             "FIRST_SUPERUSER_PASSWORD", self.FIRST_SUPERUSER_PASSWORD
         )
+        if self.MTLS_ENABLED:
+            from app.core.mtls import describe_configuration
+
+            problem = describe_configuration(
+                enabled=True,
+                ca_file=self.MTLS_CA_FILE,
+                ca_cert=self.MTLS_CA_CERT,
+                trusted_proxies=self.MTLS_TRUSTED_PROXIES,
+                provider=self.MTLS_PROVIDER,
+                header_name=self.MTLS_CLIENT_CERT_HEADER,
+            )
+            if problem:
+                warnings.warn(problem, stacklevel=1)
 
         return self
 

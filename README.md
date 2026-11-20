@@ -22,6 +22,7 @@
 - 🔒 Secure password hashing by default.
 - 🔑 JWT (JSON Web Token) authentication.
 - 🔐 Optional sign-in with Google, GitHub, and other OpenID Connect providers.
+- 🪪 Optional sign-in with an X.509 client certificate (mutual TLS).
 - 📫 Email-based password recovery.
 - ✉️ [React Email](https://react.email) for email templates.
 - 📬 [Mailpit](https://mailpit.axllent.org) for local email testing during development.
