@@ -1,33 +1,48 @@
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useNavigate } from "@tanstack/react-router"
-import { useState } from "react"
-import { useMutation, useQuery } from "@tanstack/react-query"
 
 import {
   type Body_login_login_access_token as AccessToken,
-  type ApiError,
   LoginService,
   type UserPublic,
+  type UserRegister,
   UsersService,
-} from "../client"
+} from "@/client"
+import { handleError } from "@/utils"
+import useCustomToast from "./useCustomToast"
 
 const isLoggedIn = () => {
   return localStorage.getItem("access_token") !== null
 }
 
 const useAuth = () => {
-  const [error, setError] = useState<string | null>(null)
   const navigate = useNavigate()
-  const { data: user, isLoading } = useQuery<UserPublic | null, Error>({
+  const queryClient = useQueryClient()
+  const { showErrorToast } = useCustomToast()
+
+  const { data: user } = useQuery<UserPublic | null, Error>({
     queryKey: ["currentUser"],
-    queryFn: UsersService.readUserMe,
+    queryFn: async () => (await UsersService.readUserMe()).data,
     enabled: isLoggedIn(),
+  })
+
+  const signUpMutation = useMutation({
+    mutationFn: (data: UserRegister) =>
+      UsersService.registerUser({ body: data }),
+    onSuccess: () => {
+      navigate({ to: "/login" })
+    },
+    onError: handleError.bind(showErrorToast),
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["users"] })
+    },
   })
 
   const login = async (data: AccessToken) => {
     const response = await LoginService.loginAccessToken({
-      formData: data,
+      body: data,
     })
-    localStorage.setItem("access_token", response.access_token)
+    localStorage.setItem("access_token", response.data.access_token)
   }
 
   const loginMutation = useMutation({
@@ -35,10 +50,7 @@ const useAuth = () => {
     onSuccess: () => {
       navigate({ to: "/" })
     },
-    onError: (err: ApiError) => {
-      const errDetail = (err.body as any)?.detail
-      setError(errDetail)
-    },
+    onError: handleError.bind(showErrorToast),
   })
 
   const logout = () => {
@@ -47,11 +59,10 @@ const useAuth = () => {
   }
 
   return {
+    signUpMutation,
     loginMutation,
     logout,
     user,
-    isLoading,
-    error,
   }
 }
 

@@ -3,6 +3,6 @@
 set -e
 set -x
 
-coverage run --source=app -m pytest
-coverage report --show-missing
+FASTAPI_ENV=development coverage run -m pytest tests/
+coverage report
 coverage html --title "${@-coverage}"

@@ -1,3 +1,4 @@
+import uuid
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -25,7 +26,7 @@ from app.models import (
 )
 from app.utils import generate_new_account_email, send_email
 
-router = APIRouter()
+router = APIRouter(prefix="/users", tags=["users"])
 
 
 @router.get(
@@ -41,10 +42,13 @@ def read_users(session: SessionDep, skip: int = 0, limit: int = 100) -> Any:
     count_statement = select(func.count()).select_from(User)
     count = session.exec(count_statement).one()
 
-    statement = select(User).offset(skip).limit(limit)
+    statement = (
+        select(User).order_by(col(User.created_at).desc()).offset(skip).limit(limit)
+    )
     users = session.exec(statement).all()
 
-    return UsersPublic(data=users, count=count)
+    users_public = [UserPublic.model_validate(user) for user in users]
+    return UsersPublic(data=users_public, count=count)
 
 
 @router.post(
@@ -103,7 +107,8 @@ def update_password_me(
     """
     Update own password.
     """
-    if not verify_password(body.current_password, current_user.hashed_password):
+    verified, _ = verify_password(body.current_password, current_user.hashed_password)
+    if not verified:
         raise HTTPException(status_code=400, detail="Incorrect password")
     if body.current_password == body.new_password:
         raise HTTPException(
@@ -124,16 +129,25 @@ def read_user_me(current_user: CurrentUser) -> Any:
     return current_user
 
 
+@router.delete("/me", response_model=Message)
+def delete_user_me(session: SessionDep, current_user: CurrentUser) -> Any:
+    """
+    Delete own user.
+    """
+    if current_user.is_superuser:
+        raise HTTPException(
+            status_code=403, detail="Super users are not allowed to delete themselves"
+        )
+    session.delete(current_user)
+    session.commit()
+    return Message(message="User deleted successfully")
+
+
 @router.post("/signup", response_model=UserPublic)
 def register_user(session: SessionDep, user_in: UserRegister) -> Any:
     """
     Create new user without the need to be logged in.
     """
-    if not settings.USERS_OPEN_REGISTRATION:
-        raise HTTPException(
-            status_code=403,
-            detail="Open user registration is forbidden on this server",
-        )
     user = crud.get_user_by_email(session=session, email=user_in.email)
     if user:
         raise HTTPException(
@@ -147,7 +161,7 @@ def register_user(session: SessionDep, user_in: UserRegister) -> Any:
 
 @router.get("/{user_id}", response_model=UserPublic)
 def read_user_by_id(
-    user_id: int, session: SessionDep, current_user: CurrentUser
+    user_id: uuid.UUID, session: SessionDep, current_user: CurrentUser
 ) -> Any:
     """
     Get a specific user by id.
@@ -160,6 +174,8 @@ def read_user_by_id(
             status_code=403,
             detail="The user doesn't have enough privileges",
         )
+    if user is None:
+        raise HTTPException(status_code=404, detail="User not found")
     return user
 
 
@@ -171,7 +187,7 @@ def read_user_by_id(
 def update_user(
     *,
     session: SessionDep,
-    user_id: int,
+    user_id: uuid.UUID,
     user_in: UserUpdate,
 ) -> Any:
     """
@@ -195,9 +211,9 @@ def update_user(
     return db_user
 
 
-@router.delete("/{user_id}")
+@router.delete("/{user_id}", dependencies=[Depends(get_current_active_superuser)])
 def delete_user(
-    session: SessionDep, current_user: CurrentUser, user_id: int
+    session: SessionDep, current_user: CurrentUser, user_id: uuid.UUID
 ) -> Message:
     """
     Delete a user.
@@ -205,17 +221,12 @@ def delete_user(
     user = session.get(User, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    elif user != current_user and not current_user.is_superuser:
-        raise HTTPException(
-            status_code=403, detail="The user doesn't have enough privileges"
-        )
-    elif user == current_user and current_user.is_superuser:
+    if user == current_user:
         raise HTTPException(
             status_code=403, detail="Super users are not allowed to delete themselves"
         )
-
     statement = delete(Item).where(col(Item.owner_id) == user_id)
-    session.exec(statement)  # type: ignore
+    session.exec(statement)
     session.delete(user)
     session.commit()
     return Message(message="User deleted successfully")

@@ -1,19 +1,41 @@
-import { ChakraProvider } from "@chakra-ui/react"
-import { RouterProvider, createRouter } from "@tanstack/react-router"
+import {
+  MutationCache,
+  QueryCache,
+  QueryClient,
+  QueryClientProvider,
+} from "@tanstack/react-query"
+import { createRouter, RouterProvider } from "@tanstack/react-router"
+import { AxiosError } from "axios"
+import { StrictMode } from "react"
 import ReactDOM from "react-dom/client"
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
+import { client } from "./client/client.gen"
+import { ThemeProvider } from "./components/theme-provider"
+import { Toaster } from "./components/ui/sonner"
+import "./index.css"
 import { routeTree } from "./routeTree.gen"
 
-import { StrictMode } from "react"
-import { OpenAPI } from "./client"
-import theme from "./theme"
+client.setConfig({
+  baseURL: import.meta.env.VITE_API_URL ?? "",
+  auth: () => localStorage.getItem("access_token") || "",
+})
 
-OpenAPI.BASE = import.meta.env.VITE_API_URL
-OpenAPI.TOKEN = async () => {
-  return localStorage.getItem("access_token") || ""
+const handleApiError = (error: Error) => {
+  if (
+    error instanceof AxiosError &&
+    [401, 403].includes(error.response?.status ?? 0)
+  ) {
+    localStorage.removeItem("access_token")
+    window.location.href = "/login"
+  }
 }
-
-const queryClient = new QueryClient()
+const queryClient = new QueryClient({
+  queryCache: new QueryCache({
+    onError: handleApiError,
+  }),
+  mutationCache: new MutationCache({
+    onError: handleApiError,
+  }),
+})
 
 const router = createRouter({ routeTree })
 declare module "@tanstack/react-router" {
@@ -24,10 +46,11 @@ declare module "@tanstack/react-router" {
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <ChakraProvider theme={theme}>
+    <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
       <QueryClientProvider client={queryClient}>
         <RouterProvider router={router} />
+        <Toaster richColors closeButton />
       </QueryClientProvider>
-    </ChakraProvider>
+    </ThemeProvider>
   </StrictMode>,
 )

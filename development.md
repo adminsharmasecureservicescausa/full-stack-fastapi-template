@@ -1,175 +1,138 @@
 # FastAPI Project - Development
 
-## Development in `localhost` with a custom domain
+## Local Development
 
-You might want to use something different than `localhost` as the domain. For example, if you are having problems with cookies that need a subdomain, and Chrome is not allowing you to use `localhost`.
+For local development, run PostgreSQL and Mailpit with Docker Compose, and run the FastAPI and Vite development servers locally.
 
-In that case, you have two options: you could use the instructions to modify your system `hosts` file with the instructions below in **Development with a custom IP** or you can just use `localhost.tiangolo.com`, it is set up to point to `localhost` (to the IP `127.0.0.1`) and all its subdomains too. And as it is an actual domain, the browsers will store the cookies you set during development, etc.
-
-If you used the default CORS enabled domains while generating the project, `localhost.tiangolo.com` was configured to be allowed. If you didn't, you will need to add it to the list in the variable `BACKEND_CORS_ORIGINS` in the `.env` file.
-
-To configure it in your stack, follow the section **Change the development "domain"** below, using the domain `localhost.tiangolo.com`.
-
-After performing those steps you should be able to open: http://localhost.tiangolo.com and it will be served by your stack in `localhost`.
-
-Check all the corresponding available URLs in the section at the end.
-
-## Development with a custom IP
-
-If you are running Docker in an IP address different than `127.0.0.1` (`localhost`), you will need to perform some additional steps. That will be the case if you are running a custom Virtual Machine or your Docker is located in a different machine in your network.
-
-In that case, you will need to use a fake local domain (`dev.example.com`) and make your computer think that the domain is served by the custom IP (e.g. `192.168.99.150`).
-
-If you have a custom domain like that, you need to add it to the list in the variable `BACKEND_CORS_ORIGINS` in the `.env` file.
-
-* Open your `hosts` file with administrative privileges using a text editor:
-
-  * **Note for Windows**: If you are in Windows, open the main Windows menu, search for "notepad", right click on it, and select the option "open as Administrator" or similar. Then click the "File" menu, "Open file", go to the directory `c:\Windows\System32\Drivers\etc\`, select the option to show "All files" instead of only "Text (.txt) files", and open the `hosts` file.
-  * **Note for Mac and Linux**: Your `hosts` file is probably located at `/etc/hosts`, you can edit it in a terminal running `sudo nano /etc/hosts`.
-
-* Additional to the contents it might have, add a new line with the custom IP (e.g. `192.168.99.150`) a space character, and your fake local domain: `dev.example.com`.
-
-The new line might look like:
-
-```
-192.168.99.150    dev.example.com
-```
-
-* Save the file.
-  * **Note for Windows**: Make sure you save the file as "All files", without an extension of `.txt`. By default, Windows tries to add the extension. Make sure the file is saved as is, without extension.
-
-...that will make your computer think that the fake local domain is served by that custom IP, and when you open that URL in your browser, it will talk directly to your locally running server when it is asked to go to `dev.example.com` and think that it is a remote server while it is actually running in your computer.
-
-To configure it in your stack, follow the section **Change the development "domain"** below, using the domain `dev.example.com`.
-
-After performing those steps you should be able to open: http://dev.example.com and it will be server by your stack in `192.168.99.150`.
-
-Check all the corresponding available URLs in the section at the end.
-
-## Change the development "domain"
-
-If you need to use your local stack with a different domain than `localhost`, you need to make sure the domain you use points to the IP where your stack is set up.
-
-To simplify your Docker Compose setup, for example, so that the API docs (Swagger UI) knows where is your API, you should let it know you are using that domain for development.
-
-* Open the file located at `./.env`. It would have a line like:
-
-```
-DOMAIN=localhost
-```
-
-* Change it to the domain you are going to use, e.g.:
-
-```
-DOMAIN=localhost.tiangolo.com
-```
-
-That variable will be used by the Docker Compose files.
-
-After that, you can restart your stack with:
+Start the supporting services:
 
 ```bash
-docker compose up -d
+docker compose up -d db mailpit
 ```
 
-and check all the corresponding available URLs in the section at the end.
+Then, from the `backend` directory, install the dependencies and prepare the database:
 
-## Docker Compose files and env vars
+```bash
+uv sync
+uv run bash scripts/prestart.sh
+```
 
-There is a main `docker-compose.yml` file with all the configurations that apply to the whole stack, it is used automatically by `docker compose`.
+Start the FastAPI development server:
 
-And there's also a `docker-compose.override.yml` with overrides for development, for example to mount the source code as a volume. It is used automatically by `docker compose` to apply overrides on top of `docker-compose.yml`.
+```bash
+uv run fastapi dev
+```
 
-These Docker Compose files use the `.env` file containing configurations to be injected as environment variables in the containers.
+In another terminal, from the project root, install the frontend dependencies and start the Vite development server:
 
-They also use some additional configurations taken from environment variables set in the scripts before calling the `docker compose` command.
+```bash
+bun install
+bun run dev
+```
 
-## The .env file
+Now you can open these URLs:
 
-The `.env` file is the one that contains all your configurations, generated keys and passwords, etc.
+Frontend development server: <http://localhost:5173>
 
-Depending on your workflow, you could want to exclude it from Git, for example if your project is public. In that case, you would have to make sure to set up a way for your CI tools to obtain it while building or deploying your project.
+Backend API: <http://localhost:8000>
 
-One way to do it could be to add each environment variable to your CI/CD system, and updating the `docker-compose.yml` file to read that specific env var instead of reading the `.env` file.
+Automatic interactive API documentation with Swagger UI: <http://localhost:8000/docs>
 
-### Pre-commits and code linting
+Mailpit: <http://localhost:8025>
 
-we are using a tool called [pre-commit](https://pre-commit.com/) for code linting and formatting.
+The frontend development server uses the backend at `http://localhost:8000`, as configured in `frontend/.env`.
 
-When you install it, it runs right before making a commit in git. This way it ensures that the code is consistent and formatted even before it is committed.
+### Frontend Served by FastAPI
+
+Build the frontend from the `frontend` directory:
+
+```bash
+bun run build
+```
+
+The build is written to `backend/app/frontend` and served by FastAPI at <http://localhost:8000>. Rebuild the frontend after making frontend changes.
+
+## Full Stack with Docker Compose
+
+To run the backend and built frontend in Docker Compose:
+
+```bash
+docker compose run --rm backend bash scripts/prestart.sh
+docker compose watch
+```
+
+Now you can open these URLs:
+
+Application, with the frontend and API served by FastAPI: <http://localhost:8000>
+
+Automatic interactive API documentation with Swagger UI: <http://localhost:8000/docs>
+
+Adminer, database web administration: <http://localhost:8080>
+
+Traefik UI, to see how the routes are being handled by the proxy: <http://localhost:8090>
+
+Mailpit: <http://localhost:8025>
+
+Stop a locally running FastAPI server before starting the Compose backend because both use port `8000`.
+
+**Note**: The first time you start the stack, it might take a minute for all the services to be ready. To monitor it, use `docker compose logs`, or `docker compose logs backend` for the backend service.
+
+## Mailpit
+
+[Mailpit](https://mailpit.axllent.org) captures emails sent during local development instead of delivering them. The local backend connects to it at `localhost:1025`, and the Compose backend connects to the `mailpit` service. Captured emails are available at <http://localhost:8025>.
+
+## Docker Compose Files and Environment Variables
+
+The main `compose.yml` file contains the configuration shared by the whole stack. Docker Compose loads it automatically.
+
+The `compose.override.yml` file adds local development settings, such as mounting the source code as a volume. Docker Compose also loads it automatically and applies it on top of `compose.yml`.
+
+The `compose.deploy.yml` file contains the deployment-specific settings, including HTTPS and automatic certificate handling. It is explicitly combined with `compose.yml` when deploying the application.
+
+The backend reads local settings from the `.env` file. Docker Compose also uses it for variable interpolation and passes the settings each container needs.
+
+After changing variables, make sure you restart the stack:
+
+```bash
+docker compose watch
+```
+
+## The `.env` File
+
+The tracked `.env` file contains local development defaults, passwords, and other configuration. Its hostnames use `localhost` for processes running on your machine. Docker Compose overrides hostnames such as the database and SMTP server with their Compose service names.
+
+Do not store deployment secrets in `.env`. Configure them as described in the [FastAPI Cloud deployment guide](./deployment.md) or the [Docker Compose deployment guide](./deployment-docker-compose.md).
+
+## Pre-commit Hooks and Code Linting
+
+The project uses [prek](https://prek.j178.dev/), a modern alternative to [pre-commit](https://pre-commit.com/), for code linting and formatting.
 
 You can find a file `.pre-commit-config.yaml` with configurations at the root of the project.
 
-#### Install pre-commit to run automatically
+### Install `prek` to Run Automatically
 
-`pre-commit` is already part of the dependencies of the project, but you could also install it globally if you prefer to, following [the official pre-commit docs](https://pre-commit.com/).
+`prek` is already part of the dependencies of the project.
 
-After having the `pre-commit` tool installed and available, you need to "install" it in the local repository, so that it runs automatically before each commit.
-
-Using Poetry, you could do it with:
+From the project root, install the Git hook so that `prek` runs automatically before each commit:
 
 ```bash
-❯ poetry run pre-commit install
-pre-commit installed at .git/hooks/pre-commit
+uv run prek install -f
 ```
 
-Now whenever you try to commit, e.g. with:
+The `-f` flag forces the installation, in case there was already a `pre-commit` hook previously installed.
+
+Now whenever you try to commit, for example with:
 
 ```bash
 git commit
 ```
 
-...pre-commit will run and check and format the code you are about to commit, and will ask you to add that code (stage it) with git again before committing.
+`prek` will check and format the code you are about to commit. If it modifies any files, add those files to Git again before committing.
 
-Then you can `git add` the modified/fixed files again and now you can commit.
+### Run `prek` Manually
 
-#### Running pre-commit hooks manually
-
-you can also run `pre-commit` manually on all the files, you can do it using Poetry with:
+You can also run `prek` manually on all files from the project root:
 
 ```bash
-❯ poetry run pre-commit run --all-files
-check for added large files..............................................Passed
-check toml...............................................................Passed
-check yaml...............................................................Passed
-ruff.....................................................................Passed
-ruff-format..............................................................Passed
-eslint...................................................................Passed
-prettier.................................................................Passed
+uv run prek run --all-files
 ```
-
-## URLs
-
-The production or staging URLs would use these same paths, but with your own domain.
-
-### Development URLs
-
-Development URLs, for local development.
-
-Frontend: http://localhost
-
-Backend: http://localhost/api/
-
-Automatic Interactive Docs (Swagger UI): http://localhost/docs
-
-Automatic Alternative Docs (ReDoc): http://localhost/redoc
-
-Adminer: http://localhost:8080
-
-Traefik UI: http://localhost:8090
-
-### Development in localhost with a custom domain URLs
-
-Development URLs, for local development.
-
-Frontend: http://localhost.tiangolo.com
-
-Backend: http://localhost.tiangolo.com/api/
-
-Automatic Interactive Docs (Swagger UI): http://localhost.tiangolo.com/docs
-
-Automatic Alternative Docs (ReDoc): http://localhost.tiangolo.com/redoc
-
-Adminer: http://localhost.tiangolo.com:8080
-
-Traefik UI: http://localhost.tiangolo.com:8090

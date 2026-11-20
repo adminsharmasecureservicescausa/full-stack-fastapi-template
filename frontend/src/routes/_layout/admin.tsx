@@ -1,118 +1,74 @@
-import {
-  Badge,
-  Box,
-  Container,
-  Flex,
-  Heading,
-  Spinner,
-  Table,
-  TableContainer,
-  Tbody,
-  Td,
-  Th,
-  Thead,
-  Tr,
-} from "@chakra-ui/react"
-import { createFileRoute } from "@tanstack/react-router"
-import { useQuery, useQueryClient } from "@tanstack/react-query"
+import { useSuspenseQuery } from "@tanstack/react-query"
+import { createFileRoute, redirect } from "@tanstack/react-router"
+import { Suspense } from "react"
 
-import { type UserPublic, UsersService } from "../../client"
-import ActionsMenu from "../../components/Common/ActionsMenu"
-import Navbar from "../../components/Common/Navbar"
-import useCustomToast from "../../hooks/useCustomToast"
+import { type UserPublic, UsersService } from "@/client"
+import AddUser from "@/components/Admin/AddUser"
+import { columns, type UserTableData } from "@/components/Admin/columns"
+import { DataTable } from "@/components/Common/DataTable"
+import PendingUsers from "@/components/Pending/PendingUsers"
+import useAuth from "@/hooks/useAuth"
+
+function getUsersQueryOptions() {
+  return {
+    queryFn: async () =>
+      (await UsersService.readUsers({ query: { skip: 0, limit: 100 } })).data,
+    queryKey: ["users"],
+  }
+}
 
 export const Route = createFileRoute("/_layout/admin")({
   component: Admin,
+  beforeLoad: async () => {
+    const { data: user } = await UsersService.readUserMe()
+    if (!user.is_superuser) {
+      throw redirect({
+        to: "/",
+      })
+    }
+  },
+  head: () => ({
+    meta: [
+      {
+        title: "Admin - FastAPI Template",
+      },
+    ],
+  }),
 })
 
-function Admin() {
-  const queryClient = useQueryClient()
-  const showToast = useCustomToast()
-  const currentUser = queryClient.getQueryData<UserPublic>(["currentUser"])
-  const {
-    data: users,
-    isLoading,
-    isError,
-    error,
-  } = useQuery({
-    queryKey: ["users"],
-    queryFn: () => UsersService.readUsers({}),
-  })
+function UsersTableContent() {
+  const { user: currentUser } = useAuth()
+  const { data: users } = useSuspenseQuery(getUsersQueryOptions())
 
-  if (isError) {
-    const errDetail = (error as any).body?.detail
-    showToast("Something went wrong.", `${errDetail}`, "error")
-  }
+  const tableData: UserTableData[] = users.data.map((user: UserPublic) => ({
+    ...user,
+    isCurrentUser: currentUser?.id === user.id,
+  }))
 
+  return <DataTable columns={columns} data={tableData} />
+}
+
+function UsersTable() {
   return (
-    <>
-      {isLoading ? (
-        // TODO: Add skeleton
-        <Flex justify="center" align="center" height="100vh" width="full">
-          <Spinner size="xl" color="ui.main" />
-        </Flex>
-      ) : (
-        users && (
-          <Container maxW="full">
-            <Heading
-              size="lg"
-              textAlign={{ base: "center", md: "left" }}
-              pt={12}
-            >
-              User Management
-            </Heading>
-            <Navbar type={"User"} />
-            <TableContainer>
-              <Table fontSize="md" size={{ base: "sm", md: "md" }}>
-                <Thead>
-                  <Tr>
-                    <Th>Full name</Th>
-                    <Th>Email</Th>
-                    <Th>Role</Th>
-                    <Th>Status</Th>
-                    <Th>Actions</Th>
-                  </Tr>
-                </Thead>
-                <Tbody>
-                  {users.data.map((user) => (
-                    <Tr key={user.id}>
-                      <Td color={!user.full_name ? "ui.dim" : "inherit"}>
-                        {user.full_name || "N/A"}
-                        {currentUser?.id === user.id && (
-                          <Badge ml="1" colorScheme="teal">
-                            You
-                          </Badge>
-                        )}
-                      </Td>
-                      <Td>{user.email}</Td>
-                      <Td>{user.is_superuser ? "Superuser" : "User"}</Td>
-                      <Td>
-                        <Flex gap={2}>
-                          <Box
-                            w="2"
-                            h="2"
-                            borderRadius="50%"
-                            bg={user.is_active ? "ui.success" : "ui.danger"}
-                            alignSelf="center"
-                          />
-                          {user.is_active ? "Active" : "Inactive"}
-                        </Flex>
-                      </Td>
-                      <Td>
-                        <ActionsMenu
-                          type="User"
-                          value={user}
-                          disabled={currentUser?.id === user.id ? true : false}
-                        />
-                      </Td>
-                    </Tr>
-                  ))}
-                </Tbody>
-              </Table>
-            </TableContainer>
-          </Container>
-        )
-      )}
-    </>
+    <Suspense fallback={<PendingUsers />}>
+      <UsersTableContent />
+    </Suspense>
+  )
+}
+
+function Admin() {
+  return (
+    <div className="flex flex-col gap-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Users</h1>
+          <p className="text-muted-foreground">
+            Manage user accounts and permissions
+          </p>
+        </div>
+        <AddUser />
+      </div>
+      <UsersTable />
+    </div>
   )
 }
