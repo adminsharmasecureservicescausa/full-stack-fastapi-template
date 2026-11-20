@@ -17,6 +17,7 @@ dependencies = [
     "pydantic-settings<3.0.0,>=2.2.1",
     "sentry-sdk[fastapi]>=2.70.0,<3.0.0",
     "pyjwt[crypto]>=2.15.0,<3.0.0",
+    "cryptography>=46,<51",
     "pwdlib[argon2,bcrypt]>=0.3.1",
 ]
 

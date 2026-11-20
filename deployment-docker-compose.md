@@ -60,6 +60,30 @@ export GITHUB_CLIENT_SECRET="your-github-client-secret"
 
 Create the Google client as a Web application in Google Cloud Console, and the GitHub client as an OAuth App. GitHub is OAuth 2.0 rather than OpenID Connect; the app requests `read:user` and `user:email` and accepts only a verified email.
 
+### Client certificate sign-in
+
+Leave this off unless you want mutual TLS. Password and OAuth sign-in keep working either way.
+
+Create a CA and a client certificate with the commands in [development.md](./development.md#sign-in-with-a-client-certificate). Copy `client-ca.pem` to the server (for example `/root/code/app/client-ca.pem`). Do not copy `client-ca.key` or `client.key` to the server. Import `client.p12` on the machine that will sign in.
+
+Then set:
+
+```bash
+export MTLS_CA_FILE_HOST=/root/code/app/client-ca.pem
+# Optional. Defaults match the fixed proxy address in compose.mtls.yml.
+# export MTLS_PROXY_IP=172.28.10.10
+# export MTLS_TRUSTED_PROXIES=172.28.10.10
+# export MTLS_DOCKER_SUBNET=172.28.10.0/24
+# export MTLS_PROVIDER=client-ca
+# export MTLS_MATCH_EMAIL=false
+```
+
+`MTLS_PROXY_IP` has to sit inside `MTLS_DOCKER_SUBNET`, and `MTLS_TRUSTED_PROXIES` has to be that proxy address. The API ignores a certificate header from any other peer.
+
+When you enable it, add `-f compose.mtls.yml` to every Compose command for this stack, including the commands below. Traefik then requests a client certificate on HTTPS, verifies it against the CA when one is presented, strips any client-supplied `X-Forwarded-Tls-Client-Cert` header, and writes the certificate it verified. Visitors who dismiss the browser prompt can still use email and password or OAuth. A certificate that is expired, not yet valid, or signed by a different CA is rejected.
+
+After the stack is up, each user links a certificate from **Settings → Certificates** (upload the public PEM, which must contain their account email, or link the certificate the browser is presenting). Admins can open a user in the admin list and revoke a linked certificate. `MTLS_MATCH_EMAIL=true` instead links a certificate automatically the first time its email matches exactly one account.
+
 ## Deploy
 
 ```bash
@@ -68,6 +92,8 @@ docker compose -f compose.yml -f compose.deploy.yml build
 docker compose -f compose.yml -f compose.deploy.yml run --rm backend bash scripts/prestart.sh
 docker compose -f compose.yml -f compose.deploy.yml up -d
 ```
+
+Add `-f compose.mtls.yml` to each of those commands when client-certificate sign-in is enabled. `MTLS_CA_FILE_HOST` must be set or Compose stops with that variable's error. No database migration is required for certificates: they are rows in the existing `external_identity` table.
 
 The `compose.deploy.yml` file adds HTTPS and automatic certificate handling to the shared `compose.yml` configuration. Explicitly listing both files excludes the local settings from `compose.override.yml`.
 

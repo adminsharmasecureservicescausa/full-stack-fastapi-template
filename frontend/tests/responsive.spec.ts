@@ -66,7 +66,9 @@ test.describe("mobile dashboard and items", () => {
     await expect(itemsLink).toBeVisible()
     await itemsLink.click()
 
-    await expect(page.getByRole("heading", { name: "Items" })).toBeVisible()
+    await expect(
+      page.getByRole("heading", { name: "Items", exact: true }),
+    ).toBeVisible()
     await expect(page.getByRole("button", { name: "Add Item" })).toBeVisible()
     await expectNoHorizontalOverflow(page)
 

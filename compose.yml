@@ -68,6 +68,15 @@ services:
       GITHUB_CLIENT_ID: "${GITHUB_CLIENT_ID:-}"
       GITHUB_CLIENT_SECRET: "${GITHUB_CLIENT_SECRET:-}"
       OIDC_PROVIDERS: "${OIDC_PROVIDERS:-}"
+      # Certificate login stays off until MTLS_ENABLED=true and compose.mtls.yml
+      # is included. See deployment-docker-compose.md.
+      MTLS_ENABLED: ${MTLS_ENABLED:-false}
+      MTLS_CA_FILE: ${MTLS_CA_FILE:-}
+      MTLS_CA_CERT: ${MTLS_CA_CERT:-}
+      MTLS_TRUSTED_PROXIES: ${MTLS_TRUSTED_PROXIES:-}
+      MTLS_CLIENT_CERT_HEADER: ${MTLS_CLIENT_CERT_HEADER:-X-Forwarded-Tls-Client-Cert}
+      MTLS_PROVIDER: ${MTLS_PROVIDER:-client-ca}
+      MTLS_MATCH_EMAIL: ${MTLS_MATCH_EMAIL:-false}
 
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/utils/health-check/"]
