@@ -13,12 +13,14 @@ function CopyId({ id }: { id: string }) {
   const isCopied = copiedText === id
 
   return (
-    <div className="flex items-center gap-1.5 group">
-      <span className="font-mono text-xs text-muted-foreground">{id}</span>
+    <div className="group flex min-w-0 items-center gap-1.5">
+      <span className="font-mono text-xs break-all text-muted-foreground">
+        {id}
+      </span>
       <Button
         variant="ghost"
         size="icon"
-        className="size-6 opacity-0 group-hover:opacity-100 transition-opacity"
+        className="size-11 shrink-0 opacity-100 transition-opacity md:size-6 md:opacity-0 md:group-hover:opacity-100"
         onClick={() => copy(id)}
       >
         {isCopied ? (
@@ -53,7 +55,7 @@ export const columns: ColumnDef<DataTableFeatures, ItemPublic>[] = [
       return (
         <span
           className={cn(
-            "max-w-xs truncate block text-muted-foreground",
+            "block whitespace-normal break-words text-muted-foreground md:max-w-xs md:truncate",
             !description && "italic",
           )}
         >

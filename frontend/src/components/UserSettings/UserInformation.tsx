@@ -105,7 +105,7 @@ const UserInformation = () => {
                   <FormLabel>Full name</FormLabel>
                   <p
                     className={cn(
-                      "py-2 truncate max-w-sm",
+                      "py-2 break-words [overflow-wrap:anywhere]",
                       !field.value && "text-muted-foreground",
                     )}
                   >
@@ -131,7 +131,7 @@ const UserInformation = () => {
               ) : (
                 <FormItem>
                   <FormLabel>Email</FormLabel>
-                  <p className="py-2 truncate max-w-sm">{field.value}</p>
+                  <p className="py-2 break-all">{field.value}</p>
                 </FormItem>
               )
             }

@@ -103,7 +103,7 @@ function Login() {
               name="password"
               render={({ field }) => (
                 <FormItem>
-                  <div className="flex items-center">
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                     <FormLabel>Password</FormLabel>
                     <RouterLink
                       to="/recover-password"

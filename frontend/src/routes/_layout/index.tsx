@@ -19,7 +19,7 @@ function Dashboard() {
   return (
     <div>
       <div>
-        <h1 className="text-2xl truncate max-w-sm">
+        <h1 className="text-2xl [overflow-wrap:anywhere] md:max-w-sm md:truncate">
           Hi, {currentUser?.full_name || currentUser?.email} 👋
         </h1>
         <p className="text-muted-foreground">

@@ -19,7 +19,10 @@ export const columns: ColumnDef<DataTableFeatures, UserTableData>[] = [
       return (
         <div className="flex items-center gap-2">
           <span
-            className={cn("font-medium", !fullName && "text-muted-foreground")}
+            className={cn(
+              "font-medium break-words whitespace-normal md:whitespace-nowrap",
+              !fullName && "text-muted-foreground",
+            )}
           >
             {fullName || "N/A"}
           </span>
@@ -36,7 +39,9 @@ export const columns: ColumnDef<DataTableFeatures, UserTableData>[] = [
     accessorKey: "email",
     header: "Email",
     cell: ({ row }) => (
-      <span className="text-muted-foreground">{row.original.email}</span>
+      <span className="text-muted-foreground break-all whitespace-normal md:whitespace-nowrap">
+        {row.original.email}
+      </span>
     ),
   },
   {

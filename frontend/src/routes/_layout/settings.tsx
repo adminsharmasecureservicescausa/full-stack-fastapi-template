@@ -42,10 +42,14 @@ function UserSettings() {
         </p>
       </div>
 
-      <Tabs defaultValue="my-profile">
-        <TabsList>
+      <Tabs defaultValue="my-profile" className="min-w-0">
+        <TabsList className="h-auto w-full max-w-full justify-start overflow-x-auto">
           {finalTabs.map((tab) => (
-            <TabsTrigger key={tab.value} value={tab.value}>
+            <TabsTrigger
+              key={tab.value}
+              value={tab.value}
+              className="min-h-11 shrink-0 px-3 md:min-h-8"
+            >
               {tab.title}
             </TabsTrigger>
           ))}
