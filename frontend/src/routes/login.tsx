@@ -1,4 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod"
+import { useQuery } from "@tanstack/react-query"
 import {
   createFileRoute,
   Link as RouterLink,
@@ -7,8 +8,12 @@ import {
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 
-import type { Body_login_login_access_token as AccessToken } from "@/client"
+import {
+  type Body_login_login_access_token as AccessToken,
+  LoginService,
+} from "@/client"
 import { AuthLayout } from "@/components/Common/AuthLayout"
+import { Button } from "@/components/ui/button"
 import {
   Form,
   FormControl,
@@ -52,6 +57,10 @@ export const Route = createFileRoute("/login")({
 
 function Login() {
   const { loginMutation } = useAuth()
+  const providers = useQuery({
+    queryKey: ["oauthProviders"],
+    queryFn: async () => (await LoginService.readOauthProviders()).data.data,
+  })
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     mode: "onBlur",
@@ -127,6 +136,31 @@ function Login() {
             <LoadingButton type="submit" loading={loginMutation.isPending}>
               Log In
             </LoadingButton>
+            {providers.data && providers.data.length > 0 && (
+              <div className="grid gap-3">
+                <div className="relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t after:border-border">
+                  <span className="bg-background text-muted-foreground relative z-10 px-2">
+                    or
+                  </span>
+                </div>
+                {providers.data.map((provider) => (
+                  <Button
+                    key={provider.id}
+                    type="button"
+                    variant="outline"
+                    data-testid={`oauth-${provider.id}`}
+                    onClick={() => {
+                      const base = import.meta.env.VITE_API_URL ?? ""
+                      window.location.assign(
+                        `${base}/api/v1/login/oauth/${provider.id}/authorize`,
+                      )
+                    }}
+                  >
+                    Continue with {provider.name}
+                  </Button>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="text-center text-sm">

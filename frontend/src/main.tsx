@@ -17,6 +17,8 @@ import { routeTree } from "./routeTree.gen"
 client.setConfig({
   baseURL: import.meta.env.VITE_API_URL ?? "",
   auth: () => localStorage.getItem("access_token") || "",
+  // The OAuth transaction cookie must be sent back on the callback request.
+  withCredentials: true,
 })
 
 const handleApiError = (error: Error) => {

@@ -21,6 +21,7 @@
   - 📞 [Traefik](https://traefik.io) as a reverse proxy with automatic HTTPS.
 - 🔒 Secure password hashing by default.
 - 🔑 JWT (JSON Web Token) authentication.
+- 🔐 Optional sign-in with Google, GitHub, and other OpenID Connect providers.
 - 📫 Email-based password recovery.
 - ✉️ [React Email](https://react.email) for email templates.
 - 📬 [Mailpit](https://mailpit.axllent.org) for local email testing during development.

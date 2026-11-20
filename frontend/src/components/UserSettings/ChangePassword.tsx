@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/form"
 import { LoadingButton } from "@/components/ui/loading-button"
 import { PasswordInput } from "@/components/ui/password-input"
+import useAuth from "@/hooks/useAuth"
 import useCustomToast from "@/hooks/useCustomToast"
 import { handleError } from "@/utils"
 
@@ -40,6 +41,7 @@ type FormData = z.infer<typeof formSchema>
 
 const ChangePassword = () => {
   const { showSuccessToast, showErrorToast } = useCustomToast()
+  const { user } = useAuth()
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     mode: "onSubmit",
@@ -63,6 +65,18 @@ const ChangePassword = () => {
 
   const onSubmit = async (data: FormData) => {
     mutation.mutate(data)
+  }
+
+  if (user?.has_password === false) {
+    return (
+      <div className="max-w-md">
+        <h3 className="text-lg font-semibold py-4">Change Password</h3>
+        <p className="text-muted-foreground text-sm">
+          This account signs in with an external provider and does not have a
+          password yet. Use Forgot your password on the login page to set one.
+        </p>
+      </div>
+    )
   }
 
   return (

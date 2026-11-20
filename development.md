@@ -42,6 +42,24 @@ Mailpit: <http://localhost:8025>
 
 The frontend development server uses the backend at `http://localhost:8000`, as configured in `frontend/.env`.
 
+### Sign in with an OAuth provider
+
+Email and password login stays available. Google, GitHub, and any extra OpenID Connect providers appear on the login page only when their client id and secret are set in `.env`.
+
+`FRONTEND_HOST` is the origin the provider redirects back to. For this Vite workflow it is `http://localhost:5173`, so the redirect URI to register is:
+
+```text
+http://localhost:5173/oauth/callback
+```
+
+* Google: create an OAuth client ID of type Web application and set `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`. Google is used as OpenID Connect.
+* GitHub: create an OAuth App and set `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET`. GitHub does not speak OpenID Connect; the backend uses the authorization-code flow with PKCE, then reads the GitHub user id and a verified primary email.
+* Another OpenID Connect provider: set `OIDC_PROVIDERS` to a JSON array. Each item needs `id`, `name`, `client_id`, `client_secret`, and `discovery_url`.
+
+Restart the backend after changing these values. Accounts created this way have no password until the user sets one with Forgot your password. Signing in with a verified email that already belongs to a user links the provider to that existing account.
+
+External identities are stored in `external_identity` as `(identity_type, provider, subject)`. `identity_type` is `oidc` for these providers. A later client-certificate login can add rows with `identity_type` `mtls` without a new table.
+
 ### Frontend Served by FastAPI
 
 Build the frontend from the `frontend` directory:
