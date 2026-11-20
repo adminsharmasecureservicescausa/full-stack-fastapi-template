@@ -137,6 +137,44 @@ export type NewPassword = {
 };
 
 /**
+ * OAuthCallback
+ */
+export type OAuthCallback = {
+    /**
+     * Code
+     */
+    code: string;
+    /**
+     * State
+     */
+    state: string;
+};
+
+/**
+ * OAuthProviderPublic
+ */
+export type OAuthProviderPublic = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Name
+     */
+    name: string;
+};
+
+/**
+ * OAuthProvidersPublic
+ */
+export type OAuthProvidersPublic = {
+    /**
+     * Data
+     */
+    data: Array<OAuthProviderPublic>;
+};
+
+/**
  * PrivateUserCreate
  */
 export type PrivateUserCreate = {
@@ -240,6 +278,10 @@ export type UserPublic = {
      * Created At
      */
     created_at?: string | null;
+    /**
+     * Has Password
+     */
+    has_password?: boolean;
 };
 
 /**
@@ -467,6 +509,75 @@ export type loginRecoverPasswordHtmlContentResponses = {
 };
 
 export type loginRecoverPasswordHtmlContentResponse = loginRecoverPasswordHtmlContentResponses[keyof loginRecoverPasswordHtmlContentResponses];
+
+export type loginReadOauthProvidersData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/login/oauth/providers';
+};
+
+export type loginReadOauthProvidersResponses = {
+    /**
+     * Successful Response
+     */
+    200: OAuthProvidersPublic;
+};
+
+export type loginReadOauthProvidersResponse = loginReadOauthProvidersResponses[keyof loginReadOauthProvidersResponses];
+
+export type loginOauthAuthorizeData = {
+    body?: never;
+    path: {
+        /**
+         * Provider
+         */
+        provider: string;
+    };
+    query?: never;
+    url: '/api/v1/login/oauth/{provider}/authorize';
+};
+
+export type loginOauthAuthorizeErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type loginOauthAuthorizeError = loginOauthAuthorizeErrors[keyof loginOauthAuthorizeErrors];
+
+export type loginOauthAuthorizeResponses = {
+    /**
+     * Successful Response
+     */
+    200: unknown;
+};
+
+export type loginOauthCallbackData = {
+    body: OAuthCallback;
+    path?: never;
+    query?: never;
+    url: '/api/v1/login/oauth/callback';
+};
+
+export type loginOauthCallbackErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type loginOauthCallbackError = loginOauthCallbackErrors[keyof loginOauthCallbackErrors];
+
+export type loginOauthCallbackResponses = {
+    /**
+     * Successful Response
+     */
+    200: Token;
+};
+
+export type loginOauthCallbackResponse = loginOauthCallbackResponses[keyof loginOauthCallbackResponses];
 
 export type usersReadUsersData = {
     body?: never;

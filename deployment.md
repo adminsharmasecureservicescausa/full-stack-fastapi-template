@@ -34,6 +34,12 @@ Add these required values and mark them as secrets:
 * `FIRST_SUPERUSER_PASSWORD`: The password of the first superuser.
 * `DATABASE_URL`: The PostgreSQL connection URL, configured automatically when using a database integration.
 
+To enable social sign-in, add these optional secrets. A provider stays disabled until both of its values are set. The redirect URI to register in the provider is `{FRONTEND_HOST}/oauth/callback`.
+
+* `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`: Google OAuth client (Web application) from Google Cloud Console. Google is OpenID Connect.
+* `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET`: GitHub OAuth App. GitHub is OAuth 2.0; the API reads the user id and a verified email from GitHub.
+* `OIDC_PROVIDERS`: Optional JSON array of additional OpenID Connect providers. Each object needs `id`, `name`, `client_id`, `client_secret`, and `discovery_url`. `scopes` defaults to `openid`, `email`, and `profile`.
+
 To enable emails with an authenticated provider, add `SMTP_PASSWORD` as a secret.
 
 You can generate secure values for `SECRET_KEY` and `FIRST_SUPERUSER_PASSWORD` with:

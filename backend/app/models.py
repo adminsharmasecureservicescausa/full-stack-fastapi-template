@@ -1,7 +1,8 @@
 import uuid
 from datetime import UTC, datetime
 
-from pydantic import EmailStr
+from pydantic import EmailStr, computed_field
+from sqlalchemy import UniqueConstraint
 from sqlmodel import Field, Relationship, SQLModel
 
 
@@ -50,15 +51,69 @@ class UpdatePassword(SQLModel):
 # Database model, database table inferred from class name
 class User(UserBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    hashed_password: str
+    # Null when the account can only sign in with an external identity.
+    hashed_password: str | None = Field(default=None)
     created_at: datetime | None = Field(default_factory=get_datetime_utc)
     items: list[Item] = Relationship(back_populates="owner", cascade_delete=True)
+    external_identities: list[ExternalIdentity] = Relationship(
+        back_populates="user", cascade_delete=True
+    )
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def has_password(self) -> bool:
+        return self.hashed_password is not None
+
+
+class IdentityType:
+    """Authenticator families stored on ``ExternalIdentity``.
+
+    ``oidc`` covers OpenID Connect and OAuth 2.0 providers. ``mtls`` is
+    reserved for client-certificate login: ``provider`` will name the trust
+    domain and ``subject`` the certificate fingerprint. New families reuse
+    this table, so they do not need a migration.
+    """
+
+    OIDC = "oidc"
+    MTLS = "mtls"
+
+
+class ExternalIdentity(SQLModel, table=True):
+    """A non-password login linked to a user.
+
+    The unique key is ``(identity_type, provider, subject)``. For OIDC,
+    ``provider`` is the IdP slug and ``subject`` is the provider's stable
+    subject. A later mTLS login can insert rows with ``identity_type``
+    ``mtls`` without changing this schema.
+    """
+
+    __tablename__ = "external_identity"
+    __table_args__ = (
+        UniqueConstraint(
+            "identity_type",
+            "provider",
+            "subject",
+            name="uq_external_identity_subject",
+        ),
+    )
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    user_id: uuid.UUID = Field(
+        foreign_key="user.id", nullable=False, ondelete="CASCADE", index=True
+    )
+    identity_type: str = Field(max_length=32)
+    provider: str = Field(max_length=64)
+    subject: str = Field(max_length=255)
+    email: str | None = Field(default=None, max_length=255)
+    created_at: datetime | None = Field(default_factory=get_datetime_utc)
+    user: User | None = Relationship(back_populates="external_identities")
 
 
 # Properties to return via API, id is always required
 class UserPublic(UserBase):
     id: uuid.UUID
     created_at: datetime | None = None
+    has_password: bool = False
 
 
 class UsersPublic(SQLModel):
@@ -124,3 +179,17 @@ class TokenPayload(SQLModel):
 class NewPassword(SQLModel):
     token: str
     new_password: str = Field(min_length=8, max_length=128)
+
+
+class OAuthProviderPublic(SQLModel):
+    id: str
+    name: str
+
+
+class OAuthProvidersPublic(SQLModel):
+    data: list[OAuthProviderPublic]
+
+
+class OAuthCallback(SQLModel):
+    code: str = Field(min_length=1, max_length=2048)
+    state: str = Field(min_length=1, max_length=512)

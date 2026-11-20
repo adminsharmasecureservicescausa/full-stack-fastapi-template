@@ -47,6 +47,19 @@ export FIRST_SUPERUSER_PASSWORD="$(python -c 'import secrets; print(secrets.toke
 
 To use an authenticated email provider, also set `SMTP_PASSWORD`.
 
+To enable social sign-in, also set the provider secrets. A provider stays disabled until both of its values are set. Register `{FRONTEND_HOST}/oauth/callback` as the redirect URI. In this Docker Compose deployment, `FRONTEND_HOST` is `https://$DOMAIN`.
+
+```bash
+export GOOGLE_CLIENT_ID="your-google-client-id"
+export GOOGLE_CLIENT_SECRET="your-google-client-secret"
+export GITHUB_CLIENT_ID="your-github-client-id"
+export GITHUB_CLIENT_SECRET="your-github-client-secret"
+# Optional extra OpenID Connect providers, as one JSON line:
+# export OIDC_PROVIDERS='[{"id":"auth0","name":"Auth0","client_id":"...","client_secret":"...","discovery_url":"https://example.us.auth0.com/.well-known/openid-configuration"}]'
+```
+
+Create the Google client as a Web application in Google Cloud Console, and the GitHub client as an OAuth App. GitHub is OAuth 2.0 rather than OpenID Connect; the app requests `read:user` and `user:email` and accepts only a verified email.
+
 ## Deploy
 
 ```bash
